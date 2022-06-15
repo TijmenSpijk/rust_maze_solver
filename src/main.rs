@@ -1,11 +1,13 @@
+use image::{GrayImage, DynamicImage};
+use crate::maze::*;
+
+mod node;
+mod maze;
+
 fn main() {
-    println!("Hello, world!");
+    let image: DynamicImage = image::open("./images/tiny.png").unwrap();
+    let image: GrayImage = image.to_luma8();
+    let maze = Maze::new(image);
+    maze.parse();
 }
 
-/* TODO */
-// reading an image
-// converting image to 2d array
-// converting 2d array to network of nodes
-// creating the node class
-// solving the network => solving the maze
-// implementing path finding algorithms
