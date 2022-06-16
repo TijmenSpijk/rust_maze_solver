@@ -1,21 +1,20 @@
 use image::GrayImage;
 use crate::node::*;
 
-#[derive(Debug)]
 pub struct Maze {
     image:      GrayImage,
     node_image: GrayImage,
     path_image: GrayImage,
     width:      u32,
     height:     u32,
-    nodes:  Vec<Vec<Node>>
+    nodes:  Vec<Vec<Option<Node>>>
 }
 
 impl Maze {
     pub fn new(image: GrayImage) -> Maze {
         let width: usize = image.width() as usize;
         let height: usize = image.height() as usize;
-        let nodes: Vec<Vec<Node>> = vec![vec![Node::Wall(Wall::new(0, 0)) ; width]; height];
+        let nodes: Vec<Vec<Option<Node>>> = vec![vec![None; width]; height];
 
         Maze { 
             image:      image.clone(),
@@ -30,7 +29,11 @@ impl Maze {
     pub fn print_nodes(&self) {
         for y in 0..self.height {
             for x in 0..self.width {
-                print!("{:?} ", self.nodes[x as usize][y as usize]);
+                let node = &self.nodes[x as usize][y as usize];
+                match node {
+                    Some(_) => print!(" "),
+                    None => print!("X")
+                }
             }
             println!();
         }
@@ -46,11 +49,13 @@ impl Maze {
 
     fn parse_row(&mut self, y: u32, start: bool, end: bool) {
         for x in 0..self.width {
-            if self.image[(x,y)] == image::Luma([0]) {
-                self.nodes[x as usize][y as usize] = Node::Wall(Wall::new(x,y))
-            } else {
-                self.nodes[x as usize][y as usize] = Node::Path(Path::new(x, y, start, end));
-            }
+            self.parse_unit(x, y, start, end)
+        }
+    }
+
+    fn parse_unit(&mut self, x: u32, y: u32, start: bool, end: bool) {
+        if self.image[(x,y)] == image::Luma([255]) {
+            self.nodes[x as usize][y as usize] = Some(Node::new(x, y, start, end));
         }
     }
 }

@@ -10,6 +10,6 @@ fn main() {
     let mut maze = Maze::new(image);
     println!("Parsing Maze");
     maze.parse();
-    println!("Printing Nodes");
+    println!("Printing Maze");
     maze.print_nodes();
 }
