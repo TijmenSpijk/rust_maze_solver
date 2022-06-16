@@ -1,35 +1,38 @@
-use image::GrayImage;
+use image::{RgbImage, GrayImage, DynamicImage, Rgb};
 use crate::node::*;
 
 pub struct Maze {
     image:      GrayImage,
-    node_image: GrayImage,
-    path_image: GrayImage,
+    node_image: RgbImage,
+    path_image: RgbImage,
     width:      u32,
     height:     u32,
-    nodes:  Vec<Vec<Option<Node>>>
+    maze:       Vec<Vec<Option<Node>>>,
+    nodes:      Vec<Vec<Option<Node>>>
 }
 
 impl Maze {
-    pub fn new(image: GrayImage) -> Maze {
+    pub fn new(mut image: RgbImage, mut grey: GrayImage) -> Maze {
         let width: usize = image.width() as usize;
         let height: usize = image.height() as usize;
+        let maze: Vec<Vec<Option<Node>>> = vec![vec![None; width]; height];
         let nodes: Vec<Vec<Option<Node>>> = vec![vec![None; width]; height];
 
         Maze { 
-            image:      image.clone(),
+            image:      grey.clone(),
             node_image: image.clone(),
             path_image: image.clone(),
             width:      image.width(),
             height:     image.height(),
+            maze:       maze,
             nodes:      nodes,
         }
     }
 
-    pub fn print_nodes(&self) {
+    pub fn print_maze(&self) {
         for y in 0..self.height {
             for x in 0..self.width {
-                let node = &self.nodes[x as usize][y as usize];
+                let node = &self.maze[x as usize][y as usize];
                 match node {
                     Some(_) => print!(" "),
                     None => print!("X")
@@ -39,23 +42,93 @@ impl Maze {
         }
     }
 
+    pub fn print_nodes(&self) {
+        for y in 0..self.height {
+            for x in 0..self.width {
+                match &self.nodes[x as usize][y as usize] {
+                    Some(_) => print!("O"),
+                    None => print!(" ")
+                }
+            }
+            println!();
+        }
+    }
+
+    pub fn save_nodes(&mut self) {
+        for y in 0..self.height {
+            for x in 0..self.width {
+                match &self.nodes[x as usize][y as usize] {
+                    Some(node) => {
+                        let (px,py) = node.get_coords();
+                        self.node_image[(px, py)] = image::Rgb([255,0,0]);
+                    },
+                    None => continue
+                }
+            }
+        }
+        self.node_image.save("images/processed/tiny_nodes.png");
+    }
+
     pub fn parse(&mut self) {
-        self.parse_row(0, true, false);
-        for y in 1..self.height {
-            self.parse_row(y, false, false)
+        for y in 0..self.height {
+            for x in 0..self.width {
+                if self.image[(x,y)] == image::Luma([255]) {
+                    self.maze[x as usize][y as usize] = Some(Node::new(x, y, x==0, y==self.height-1));
+                }
+            }
         }
-        self.parse_row(self.height-1, false, true);
+        self.filter_nodes();
     }
 
-    fn parse_row(&mut self, y: u32, start: bool, end: bool) {
-        for x in 0..self.width {
-            self.parse_unit(x, y, start, end)
+    fn filter_nodes(&mut self) {
+        self.filter_start();
+        for y in 1..self.height-1 {
+            self.filter_row(y);
+        }
+        self.filter_end();
+    }
+
+    fn filter_start(&mut self) {
+        for x in 1..self.width-1 {
+            match self.maze[x as usize][0 as usize] {
+                Some(_) => self.nodes[x as usize][0 as usize] = Some(Node::new(x, 0, x==0, 0==self.height-1)),                    
+                None => continue                    
+            }                
         }
     }
 
-    fn parse_unit(&mut self, x: u32, y: u32, start: bool, end: bool) {
-        if self.image[(x,y)] == image::Luma([255]) {
-            self.nodes[x as usize][y as usize] = Some(Node::new(x, y, start, end));
+    fn filter_end(&mut self) {
+        for x in 1..self.width-1 {
+            match self.maze[x as usize][0 as usize] {
+                Some(_) => self.nodes[x as usize][0 as usize] = Some(Node::new(x, 0, x==0, 0==self.height-1)),                    
+                None => continue                    
+            }                
         }
+    }
+
+    fn filter_row(&mut self, y: u32) {
+        for x in 1..self.width-1 {
+            match self.maze[x as usize][y as usize] {
+                Some(_) =>
+                    if !self.is_corridor(x, y) {
+                        self.nodes[x as usize][y as usize] = Some(Node::new(x, y, x==0, y==self.height-1));
+                    },
+                None => continue                    
+            }                
+        }
+    }
+
+    fn is_corridor(&mut self, x: u32, y: u32) -> bool {
+        let x     = x as usize;
+        let y     = y as usize;
+        let left  = x-1;
+        let right = x+1;
+        let up    = y-1;
+        let down  = y+1;
+
+        let horizontal = self.maze[left][y] == None && self.maze[right][y] == None && self.maze[x][up] != None && self.maze[x][down] != None;
+        let vertical = self.maze[left][y] != None && self.maze[right][y] != None && self.maze[x][up] == None && self.maze[x][down] == None;
+
+        horizontal || vertical
     }
 }
