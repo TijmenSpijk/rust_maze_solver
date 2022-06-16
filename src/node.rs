@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::fmt;
 
 #[derive(PartialEq)]
 pub enum Dir {
@@ -8,7 +9,23 @@ pub enum Dir {
     Right,
 }
 
-pub struct Node {
+#[derive(Clone)]
+pub enum Node {
+    Wall(Wall),
+    Path(Path),
+}
+
+impl fmt::Debug for Node {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Node::Wall(Wall { x, y }) => write!(f, "Wall"),
+            Node::Path(Path { x, y, start, end, up, down, left, right }) => write!(f, "Path"),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct Path {
     x: u32,
     y: u32,
     start: bool,
@@ -19,31 +36,32 @@ pub struct Node {
     right: Option<Rc<Node>>,
 }
 
-impl Node {
-    pub fn new(x: u32, y: u32) -> Node {
-        Node {
+impl Path {
+    pub fn new(x: u32, y: u32, start: bool, end: bool) -> Path {
+        Path {
             x: x,
             y: y,
-            start: false,
-            end: false,
+            start: start,
+            end: end,
             up: None,
             down: None,
             left: None,
-            right: None,
+            right: None
         }
     }
+}
 
-    pub fn connect(mut self, node: Rc<Node>, dir: Dir) {
-        if dir == Dir::Up {
-            self.up = Some(node);
-        } else if dir == Dir::Down {
-            self.down = Some(node);
-        } else if dir == Dir::Left {
-            self.left = Some(node);
-        } else if dir == Dir::Right {
-            self.right = Some(node);
-        } else {
-            panic!("Incorrect dir")
+#[derive(Clone)]
+pub struct Wall {
+    x: u32,
+    y: u32
+}
+
+impl Wall {
+    pub fn new(x: u32, y: u32) -> Wall {
+        Wall {
+            x: x,
+            y: y,
         }
     }
 }
