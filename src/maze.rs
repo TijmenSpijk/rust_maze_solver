@@ -1,32 +1,55 @@
-use image::{RgbImage, GrayImage, DynamicImage, Rgb};
+use std::env;
+use std::error::Error;
+use image::{RgbImage, GrayImage, DynamicImage};
 use crate::node::*;
 
 pub struct Maze {
-    image:      GrayImage,
+    width:  u32,
+    height: u32,
+
+    image:  GrayImage,
+    path:   String,
+
     node_image: RgbImage,
-    path_image: RgbImage,
-    width:      u32,
-    height:     u32,
-    maze:       Vec<Vec<Option<Node>>>,
-    nodes:      Vec<Vec<Option<Node>>>
+    solution_image: RgbImage,
+
+    maze:  Vec<Vec<Option<Node>>>,
+    nodes: Vec<Vec<Option<Node>>>
 }
 
 impl Maze {
-    pub fn new(mut image: RgbImage, mut grey: GrayImage) -> Maze {
+    pub fn new(mut args: env::Args) -> Result<Maze, &'static str> {
+        args.next();
+
+        let filename = match args.next() {
+            Some(arg) => {
+                let path = arg;
+                let filename = path.split('/').last().unwrap();
+                filename.clone()
+            },
+            None => return Err("No path to input file given")
+        };
+        let image: DynamicImage = image::open(String::from("images/") + filename).unwrap();
+        let color: RgbImage = image.to_rgb8();
+        let gray: GrayImage = image.to_luma8();
+
         let width: usize = image.width() as usize;
         let height: usize = image.height() as usize;
         let maze: Vec<Vec<Option<Node>>> = vec![vec![None; width]; height];
         let nodes: Vec<Vec<Option<Node>>> = vec![vec![None; width]; height];
 
-        Maze { 
-            image:      grey.clone(),
-            node_image: image.clone(),
-            path_image: image.clone(),
-            width:      image.width(),
-            height:     image.height(),
-            maze:       maze,
-            nodes:      nodes,
-        }
+        Ok(Maze {
+            width:  image.width(),
+            height: image.height(),            
+            image:  gray.clone(),
+            path:   String::from(filename),
+
+            node_image: color.clone(),
+            solution_image: color.clone(),
+            
+            maze:  maze,
+            nodes: nodes,
+        })
     }
 
     pub fn print_maze(&self) {
@@ -98,9 +121,10 @@ impl Maze {
     }
 
     fn filter_end(&mut self) {
+        let y = (self.height - 1) as usize;
         for x in 1..self.width-1 {
-            match self.maze[x as usize][0 as usize] {
-                Some(_) => self.nodes[x as usize][0 as usize] = Some(Node::new(x, 0, x==0, 0==self.height-1)),                    
+            match self.maze[x as usize][y] {
+                Some(_) => self.nodes[x as usize][y] = Some(Node::new(x, y as u32, x==0, 0==self.height-1)),                    
                 None => continue                    
             }                
         }
