@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Node {
     x: u32,
     y: u32,
@@ -28,5 +28,13 @@ impl Node {
 
     pub fn get_coords(&self) -> (u32, u32) {
         (self.x, self.y)
+    }
+
+    pub fn is_start(&self) -> bool {
+        self.start
+    }
+
+    pub fn is_end(&self) -> bool {
+        self.end
     }
 }
