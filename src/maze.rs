@@ -8,7 +8,7 @@ pub struct Maze {
     height: u32,
 
     image:  GrayImage,
-    path:   String,
+    filename:   String,
 
     node_image: RgbImage,
     solution_image: RgbImage,
@@ -22,14 +22,11 @@ impl Maze {
         args.next();
 
         let filename = match args.next() {
-            Some(arg) => {
-                let path = arg;
-                let filename = path.split('/').last().unwrap();
-                filename.clone()
-            },
+            Some(arg) => Maze::get_file_name(arg),
             None => return Err("No path to input file given")
         };
-        let image: DynamicImage = image::open(String::from("images/") + filename).unwrap();
+        
+        let image: DynamicImage = image::open("images/".to_owned() + &filename + ".png").unwrap();
         let color: RgbImage = image.to_rgb8();
         let gray: GrayImage = image.to_luma8();
 
@@ -42,7 +39,7 @@ impl Maze {
             width:  image.width(),
             height: image.height(),            
             image:  gray.clone(),
-            path:   String::from(filename),
+            filename:   String::from(filename),
 
             node_image: color.clone(),
             solution_image: color.clone(),
@@ -89,7 +86,10 @@ impl Maze {
                 }
             }
         }
-        self.node_image.save("images/processed/tiny_nodes.png");
+        match self.node_image.save("images/processed/".to_owned() + &self.filename + "_nodes.png") {
+            Ok(_) => (),
+            Err(err) => eprintln!("{}", err)
+        }
     }
 
     pub fn parse(&mut self) {
@@ -101,6 +101,12 @@ impl Maze {
             }
         }
         self.filter_nodes();
+    }
+
+    fn get_file_name(path: String) -> String {
+        let filename = path.split('/').last().unwrap().split('.').next().unwrap();
+        println!("{}", &filename);
+        filename.clone().to_owned()
     }
 
     fn filter_nodes(&mut self) {

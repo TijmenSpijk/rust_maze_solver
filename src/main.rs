@@ -10,11 +10,7 @@ fn main() {
 
     println!("Parsing Maze");
     maze.parse();
-    println!("Printing Maze:\n");
-    maze.print_maze();
-    println!("\nPrinting Nodes:\n");
-    maze.print_nodes();
-    println!("\nSaving Nodes to Image");
+    println!("Saving Nodes to Image");
     maze.save_nodes();
 }
 
