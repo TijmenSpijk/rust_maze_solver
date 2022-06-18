@@ -1,5 +1,4 @@
 use std::env;
-use std::error::Error;
 use image::{RgbImage, GrayImage, DynamicImage};
 use crate::node::*;
 
@@ -74,24 +73,6 @@ impl Maze {
         }
     }
 
-    pub fn save_nodes(&mut self) {
-        for y in 0..self.height {
-            for x in 0..self.width {
-                match &self.nodes[x as usize][y as usize] {
-                    Some(node) => {
-                        let (px,py) = node.get_coords();
-                        self.node_image[(px, py)] = image::Rgb([255,0,0]);
-                    },
-                    None => continue
-                }
-            }
-        }
-        match self.node_image.save("images/processed/".to_owned() + &self.filename + "_nodes.png") {
-            Ok(_) => (),
-            Err(err) => eprintln!("{}", err)
-        }
-    }
-
     pub fn parse(&mut self) {
         for y in 0..self.height {
             for x in 0..self.width {
@@ -160,5 +141,27 @@ impl Maze {
         let vertical = self.maze[left][y] != None && self.maze[right][y] != None && self.maze[x][up] == None && self.maze[x][down] == None;
 
         horizontal || vertical
+    }
+
+    pub fn save_nodes(&mut self) {
+        for y in 0..self.height {
+            for x in 0..self.width {
+                match &self.nodes[x as usize][y as usize] {
+                    Some(node) => {
+                        let (px,py) = node.get_coords();
+                        self.node_image[(px, py)] = image::Rgb([255,0,0]);
+                    },
+                    None => continue
+                }
+            }
+        }
+        match self.node_image.save("images/processed/".to_owned() + &self.filename + "_nodes.png") {
+            Ok(_) => (),
+            Err(err) => eprintln!("{}", err)
+        }
+    }
+
+    pub fn save_solution(&mut self) {
+
     }
 }
