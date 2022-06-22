@@ -6,8 +6,9 @@ mod tiles;
 mod maze;
 
 fn main() {
+    println!("Reading Input");
+    println!("Creating Maze Object");    
     let mut maze = setup_maze();
-
     println!("Parsing Maze");
     maze.parse();
     println!("Saving Nodes to Image");

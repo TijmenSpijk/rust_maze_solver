@@ -42,6 +42,15 @@ mod tests {
         let nodes_end   = true;
         assert!(maze_start && maze_end && nodes_start && nodes_end)
     }
+
+    #[test]
+    fn neighbor_count() {
+        let mut maze = get_maze();
+        maze.parse();
+        for node in maze.nodes {
+            assert!(false)
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -59,6 +68,7 @@ pub struct Maze {
     nodes: Vec<Node>
 }
 
+/* IMPLEMENTATION FOR CREATING A NEW MAZE */
 impl Maze {
     pub fn new(mut args: env::Args) -> Result<Maze, &'static str> {
         args.next();
@@ -93,10 +103,12 @@ impl Maze {
 
     fn get_file_name(path: String) -> String {
         let filename = path.split('/').last().unwrap().split('.').next().unwrap();
-        println!("{}", &filename);
         filename.clone().to_owned()
     }
+}
 
+/* IMPLEMENTATION FOR FILTERING THE NODES AND CONNECTING THEM */
+impl Maze {
     pub fn parse(&mut self) {
         for y in 0..self.height {
             for x in 0..self.width {
@@ -122,8 +134,8 @@ impl Maze {
         for x in 1..self.width-1 {
             match self.maze[x as usize][y as usize] {
                 Tile::Path => {
-                    println!("Found Node");
-                    self.nodes.push(Node::new(x, y, true, false));
+                    self.nodes.push(Node::new(0, x, y, true, false));
+                    break;
                 },
                 Tile::Wall => continue                    
             }                
@@ -135,7 +147,8 @@ impl Maze {
         for x in 1..self.width-1 {
             match self.maze[x as usize][y] {
                 Tile::Path => {
-                    self.nodes.push(Node::new(x, y as u32, false, true));                    
+                    let id = self.nodes.len();
+                    self.nodes.push(Node::new(id, x, y as u32, false, true));                    
                     break;
                 },
                 Tile::Wall => continue
@@ -148,15 +161,38 @@ impl Maze {
             match self.maze[x as usize][y as usize] {
                 Tile::Path =>
                     if !self.is_corridor(x, y) {
-                        self.nodes.push(Node::new(x, y, false, false));
+                        let id = self.nodes.len();
+                        let mut new_node = Node::new(id, x, y, false, false);
+                        self.connect_nodes(&mut new_node);
+                        self.nodes.push(new_node);
                     },
                 Tile::Wall => continue                    
             }                
         }
     }
 
-    fn check_connect(&mut self, x:u32, y: u32) {
+    fn connect_nodes(&mut self, new_node: &mut Node,) {
+        let id = new_node.get_id();
+        for i in (0..id).rev() {
+            let (new_x,new_y) = new_node.get_coords();
+            let (old_x,old_y) = self.nodes[i].get_coords();
 
+            if old_x < new_x && old_y == new_y {
+                self.nodes[i].connect(Dir::Right, id);
+                new_node.connect(Dir::Left, i);
+                
+                println!("{}, {:?}", self.nodes[i].get_id(), self.nodes[i].get_neighbors());
+                println!("{}, {:?}", id, new_node.get_neighbors());
+                println!("");
+            } else if old_x == new_x && old_y < new_y {
+                self.nodes[i].connect(Dir::Down,id);
+                new_node.connect(Dir::Up, i);
+
+                println!("{}, {:?}", self.nodes[i].get_id(), self.nodes[i].get_neighbors());
+                println!("{}, {:?}", id, new_node.get_neighbors());
+                println!("");
+            }
+        }
     }
 
     fn is_corridor(&mut self, x: u32, y: u32) -> bool {
@@ -172,8 +208,23 @@ impl Maze {
 
         horizontal || vertical
     }
+}
 
+/* IMPLEMENTATION FOR WRITING TO THE IMAGES AND SAVING THEM */
+impl Maze {
     pub fn save_nodes(&mut self) {
+        for node in &self.nodes {
+            let (x,y) = node.get_coords();
+            self.node_image[(x,y)] = image::Rgb([255,0,0]);
+        }
+
+        match self.node_image.save("images/processed/".to_owned() + &self.filename + "_nodes.png") {
+            Ok(_) => (),
+            Err(err) => eprintln!("{}", err)
+        }
+    }
+
+    pub fn save_connections(&mut self) {
         for node in &self.nodes {
             let (x,y) = node.get_coords();
             self.node_image[(x,y)] = image::Rgb([255,0,0]);
