@@ -1,6 +1,6 @@
 use std::env;
 use image::{RgbImage, GrayImage, DynamicImage};
-use crate::node::*;
+use crate::tiles::*;
 
 #[cfg(test)]
 mod tests {
@@ -108,7 +108,7 @@ pub struct Maze {
     solution_image: RgbImage,
 
     maze:  Vec<Vec<Option<Node>>>,
-    nodes: Vec<Vec<Option<Node>>>
+    nodes: Vec<Node>
 }
 
 impl Maze {
@@ -127,7 +127,7 @@ impl Maze {
         let width: usize = image.width() as usize;
         let height: usize = image.height() as usize;
         let maze: Vec<Vec<Option<Node>>> = vec![vec![None; width]; height];
-        let nodes: Vec<Vec<Option<Node>>> = vec![vec![None; width]; height];
+        let nodes: Vec<Node> = vec![];
 
         Ok(Maze {
             width:  image.width(),
@@ -175,7 +175,7 @@ impl Maze {
             match self.maze[x as usize][y as usize] {
                 Some(_) => {
                     println!("Found Node");
-                    self.nodes[x as usize][y as usize] = Some(Node::new(x, y, true, false))
+                    self.nodes.push(Node::new(x, y, true, false));
                 },
                 None => continue                    
             }                
@@ -186,7 +186,10 @@ impl Maze {
         let y = (self.height - 1) as usize;
         for x in 1..self.width-1 {
             match self.maze[x as usize][y] {
-                Some(_) => self.nodes[x as usize][y] = Some(Node::new(x, y as u32, false, true)),
+                Some(_) => {
+                    self.nodes.push(Node::new(x, y as u32, false, true));                    
+                    break;
+                },
                 None => continue
             }
         }
@@ -197,11 +200,15 @@ impl Maze {
             match self.maze[x as usize][y as usize] {
                 Some(_) =>
                     if !self.is_corridor(x, y) {
-                        self.nodes[x as usize][y as usize] = Some(Node::new(x, y, false, false));
+                        self.nodes.push(Node::new(x, y, false, false));
                     },
                 None => continue                    
             }                
         }
+    }
+
+    fn check_connect(&mut self, x:u32, y: u32) {
+
     }
 
     fn is_corridor(&mut self, x: u32, y: u32) -> bool {
@@ -219,17 +226,11 @@ impl Maze {
     }
 
     pub fn save_nodes(&mut self) {
-        for y in 0..self.height {
-            for x in 0..self.width {
-                match &self.nodes[x as usize][y as usize] {
-                    Some(node) => {
-                        let (px,py) = node.get_coords();
-                        self.node_image[(px, py)] = image::Rgb([255,0,0]);
-                    },
-                    None => continue
-                }
-            }
+        for node in &self.nodes {
+            let (x,y) = node.get_coords();
+            self.node_image[(x,y)] = image::Rgb([255,0,0]);
         }
+
         match self.node_image.save("images/processed/".to_owned() + &self.filename + "_nodes.png") {
             Ok(_) => (),
             Err(err) => eprintln!("{}", err)

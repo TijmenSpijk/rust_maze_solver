@@ -1,5 +1,18 @@
 use std::rc::Rc;
 
+pub enum Dir {
+    Up,
+    Down,
+    Left,
+    Right
+}
+
+pub enum Tile {
+    Wall,
+    Path
+}
+
+
 #[derive(Clone, PartialEq, Debug)]
 pub struct Node {
     x: u32,
@@ -23,6 +36,15 @@ impl Node {
             down: None,
             left: None,
             right: None 
+        }
+    }
+
+    pub fn connect(&mut self, dir: Dir, node: Rc<Node>) {
+        match dir {
+            Dir::Up => self.up = Some(node),
+            Dir::Down => self.down = Some(node),
+            Dir::Left => self.left = Some(node),
+            Dir::Right => self.right = Some(node)
         }
     }
 

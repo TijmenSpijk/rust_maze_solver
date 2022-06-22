@@ -2,7 +2,7 @@ use std::{env, process};
 
 use crate::maze::*;
 
-mod node;
+mod tiles;
 mod maze;
 
 fn main() {
