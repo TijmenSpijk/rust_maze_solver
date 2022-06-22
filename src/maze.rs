@@ -16,11 +16,10 @@ mod tests {
         let width: usize = image.width() as usize;
         let height: usize = image.height() as usize;
         let maze: Vec<Vec<Tile>> = vec![vec![Tile::Wall; width]; height];
-        let nodes: Vec<Node> = vec![];
         
         Maze {
             width:  image.width(),
-            height: image.height(),            
+            height: image.height(),
             image:  gray.clone(),
             filename:   String::from(filename),
 
@@ -28,7 +27,7 @@ mod tests {
             solution_image: color.clone(),
             
             maze:  maze,
-            nodes: nodes,
+            node_count: 0,
         }
     }
 
@@ -41,15 +40,6 @@ mod tests {
         let nodes_start = true;
         let nodes_end   = true;
         assert!(maze_start && maze_end && nodes_start && nodes_end)
-    }
-
-    #[test]
-    fn neighbor_count() {
-        let mut maze = get_maze();
-        maze.parse();
-        for node in maze.nodes {
-            assert!(false)
-        }
     }
 }
 
@@ -65,7 +55,7 @@ pub struct Maze {
     solution_image: RgbImage,
 
     maze:  Vec<Vec<Tile>>,
-    nodes: Vec<Node>
+    node_count: u32,
 }
 
 /* IMPLEMENTATION FOR CREATING A NEW MAZE */
@@ -84,8 +74,6 @@ impl Maze {
 
         let width: usize = image.width() as usize;
         let height: usize = image.height() as usize;
-        let maze: Vec<Vec<Tile>> = vec![vec![Tile::Wall; width]; height];
-        let nodes: Vec<Node> = vec![];
 
         Ok(Maze {
             width:  image.width(),
@@ -96,8 +84,8 @@ impl Maze {
             node_image: color.clone(),
             solution_image: color.clone(),
             
-            maze:  maze,
-            nodes: nodes,
+            maze:  vec![vec![Tile::Wall; width]; height],
+            node_count: 0,
         })
     }
 
@@ -110,101 +98,78 @@ impl Maze {
 /* IMPLEMENTATION FOR FILTERING THE NODES AND CONNECTING THEM */
 impl Maze {
     pub fn parse(&mut self) {
-        for y in 0..self.height {
-            for x in 0..self.width {
-                match self.image[(x,y)] {
-                    image::Luma([255]) => self.maze[x as usize][y as usize] = Tile::Path,
-                    _ => ()
-                }
-            }
-        }        
-        self.filter_nodes();
-    }
-
-    fn filter_nodes(&mut self) {
-        self.filter_start();
-        for y in 1..self.height-1 {
-            self.filter_row(y);
-        }
-        self.filter_end();
-    }
-
-    fn filter_start(&mut self) {
         let y = 0;
         for x in 1..self.width-1 {
-            match self.maze[x as usize][y as usize] {
-                Tile::Path => {
-                    self.nodes.push(Node::new(0, x, y, true, false));
-                    break;
-                },
-                Tile::Wall => continue                    
-            }                
+            if self.image[(x,y)] ==image::Luma([255]) {
+                self.maze[x as usize][y as usize] = Tile::Node(Node::new(self.node_count, (x, y), true, false));
+                self.node_count += 1;
+            } 
+        }
+
+        for y in 1..self.height-1 {
+            for x in 1..self.width-1 {
+                if self.image[(x,y)] == image::Luma([255]) {
+                    if !self.is_corridor(x, y) {          
+                        let mut new_node = Node::new(self.node_count, (x, y), false, false);
+                        self.node_count += 1;                        
+                        self.check_left(&mut new_node, (x,y));
+                        self.check_up(&mut new_node, (x,y));
+                        self.maze[x as usize][y as usize] = Tile::Node(new_node);
+                    } else {
+                        self.maze[x as usize][y as usize] = Tile::Path;
+                    }
+                }
+            }
+        }
+
+        let y = self.height-1;
+        for x in 1..self.width-1 {
+            if self.image[(x,y)] ==image::Luma([255]) {
+                let mut new_node = Node::new(self.node_count, (x, y), false, true);
+                self.node_count += 1;                
+                self.check_left(&mut new_node, (x,y));
+                self.check_up(&mut new_node, (x,y));
+                self.maze[x as usize][y as usize] = Tile::Node(new_node);
+            } 
         }
     }
 
-    fn filter_end(&mut self) {
-        let y = (self.height - 1) as usize;
-        for x in 1..self.width-1 {
-            match self.maze[x as usize][y] {
-                Tile::Path => {
-                    let id = self.nodes.len();
-                    self.nodes.push(Node::new(id, x, y as u32, false, true));                    
-                    break;
-                },
-                Tile::Wall => continue
+    fn check_left(&mut self, new_node: &mut Node, (x,y): (u32, u32)) {
+        for i in (0..x).rev() {
+            match &self.maze[i as usize][y as usize] {
+                Tile::Wall => return,
+                Tile::Path => continue,
+                Tile::Node(mut node) => {
+                    new_node.connect(Dir::Left, node.get_id());
+                    node.connect(Dir::Right, new_node.get_id());
+                }
             }
         }
     }
 
-    fn filter_row(&mut self, y: u32) {
-        for x in 1..self.width-1 {
-            match self.maze[x as usize][y as usize] {
-                Tile::Path =>
-                    if !self.is_corridor(x, y) {
-                        let id = self.nodes.len();
-                        let mut new_node = Node::new(id, x, y, false, false);
-                        self.connect_nodes(&mut new_node);
-                        self.nodes.push(new_node);
-                    },
-                Tile::Wall => continue                    
-            }                
-        }
-    }
-
-    fn connect_nodes(&mut self, new_node: &mut Node,) {
-        let id = new_node.get_id();
-        for i in (0..id).rev() {
-            let (new_x,new_y) = new_node.get_coords();
-            let (old_x,old_y) = self.nodes[i].get_coords();
-
-            if old_x < new_x && old_y == new_y {
-                self.nodes[i].connect(Dir::Right, id);
-                new_node.connect(Dir::Left, i);
-                
-                println!("{}, {:?}", self.nodes[i].get_id(), self.nodes[i].get_neighbors());
-                println!("{}, {:?}", id, new_node.get_neighbors());
-                println!("");
-            } else if old_x == new_x && old_y < new_y {
-                self.nodes[i].connect(Dir::Down,id);
-                new_node.connect(Dir::Up, i);
-
-                println!("{}, {:?}", self.nodes[i].get_id(), self.nodes[i].get_neighbors());
-                println!("{}, {:?}", id, new_node.get_neighbors());
-                println!("");
+    fn check_up(&mut self, new_node: &mut Node, (x,y): (u32, u32)) {
+        for i in (0..y).rev() {
+            match &self.maze[x as usize][i as usize] {
+                Tile::Wall => return,
+                Tile::Path => continue,
+                Tile::Node(mut node) => {
+                    new_node.connect(Dir::Up, node.get_id());
+                    node.connect(Dir::Down, new_node.get_id());
+                }
             }
         }
     }
 
     fn is_corridor(&mut self, x: u32, y: u32) -> bool {
-        let x     = x as usize;
-        let y     = y as usize;
+        let x     = x;
+        let y     = y;
         let left  = x-1;
         let right = x+1;
         let up    = y-1;
         let down  = y+1;
 
-        let horizontal = self.maze[left][y] == Tile::Wall && self.maze[right][y] == Tile::Wall && self.maze[x][up] != Tile::Wall && self.maze[x][down] != Tile::Wall;
-        let vertical = self.maze[left][y] != Tile::Wall && self.maze[right][y] != Tile::Wall && self.maze[x][up] == Tile::Wall && self.maze[x][down] == Tile::Wall;
+        let horizontal = self.image[(left, y)] == image::Luma([0]) && self.image[(right, y)] == image::Luma([0]) && self.image[(x, up)] != image::Luma([0]) && self.image[(x, down)] != image::Luma([0]);
+        let vertical = self.image[(left, y)] != image::Luma([0]) && self.image[(right, y)] != image::Luma([0]) && self.image[(x, up)] == image::Luma([0]) && self.image[(x, down)] == image::Luma([0]);
 
         horizontal || vertical
     }
@@ -213,30 +178,18 @@ impl Maze {
 /* IMPLEMENTATION FOR WRITING TO THE IMAGES AND SAVING THEM */
 impl Maze {
     pub fn save_nodes(&mut self) {
-        for node in &self.nodes {
-            let (x,y) = node.get_coords();
-            self.node_image[(x,y)] = image::Rgb([255,0,0]);
+        for y in 0..self.height {
+            for x in 0..self.width {
+                match &self.maze[x as usize][y as usize] {
+                    Tile::Node(_) => self.node_image[(x,y)] = image::Rgb([255,0,0]),
+                    _ => ()
+                }
+            }
         }
 
         match self.node_image.save("images/processed/".to_owned() + &self.filename + "_nodes.png") {
             Ok(_) => (),
             Err(err) => eprintln!("{}", err)
         }
-    }
-
-    pub fn save_connections(&mut self) {
-        for node in &self.nodes {
-            let (x,y) = node.get_coords();
-            self.node_image[(x,y)] = image::Rgb([255,0,0]);
-        }
-
-        match self.node_image.save("images/processed/".to_owned() + &self.filename + "_nodes.png") {
-            Ok(_) => (),
-            Err(err) => eprintln!("{}", err)
-        }
-    }
-
-    pub fn save_solution(&mut self) {
-
     }
 }

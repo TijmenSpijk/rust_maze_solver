@@ -1,10 +1,11 @@
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum Tile {
     Wall,
-    Path
+    Path,
+    Node(Node),
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(PartialEq, Debug)]
 pub enum Dir {
     Up,
     Down,
@@ -13,21 +14,21 @@ pub enum Dir {
 }
 
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Node {
-    id: usize,
+    id: u32,
     x: u32,
     y: u32,
     start: bool,
     end: bool,
-    up: Option<usize>,
-    down: Option<usize>,
-    left: Option<usize>,
-    right: Option<usize>,
+    up: Option<u32>,
+    down: Option<u32>,
+    left: Option<u32>,
+    right: Option<u32>,
 }
 
 impl Node {
-    pub fn new(id: usize, x: u32, y: u32, start: bool, end: bool) -> Node {
+    pub fn new(id: u32, (x,y): (u32, u32), start: bool, end: bool) -> Node {
         Node {
             id: id,
             x: x,
@@ -41,24 +42,24 @@ impl Node {
         }
     }
 
-    pub fn connect(&mut self, dir: Dir, neighbor: usize) {
+    pub fn connect(&mut self, dir: Dir, neighbor: u32) {
         match dir {
             Dir::Up => if self.up == None {
-                self.up = Some(neighbor)
+                self.up = Some(neighbor);
             },
             Dir::Down => if self.down == None {
-                self.down = Some(neighbor)
+                self.down = Some(neighbor);
             },
             Dir::Left => if self.left == None {
-                self.left = Some(neighbor)
+                self.left = Some(neighbor);
             },
             Dir::Right => if self.right == None {
-                self.right = Some(neighbor)
+                self.right = Some(neighbor);
             },
         }
     }
 
-    pub fn get_id(&self) -> usize {
+    pub fn get_id(&self) -> u32 {
         self.id
     }
 
@@ -66,7 +67,7 @@ impl Node {
         (self.x, self.y)
     }
 
-    pub fn get_neighbors(&self) -> [Option<usize>;4] {
+    pub fn get_neighbors(&self) -> [Option<u32>;4] {
         [self.up,self.down,self.left,self.right]
     }
 
