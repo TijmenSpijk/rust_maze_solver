@@ -7,7 +7,7 @@ mod tests {
     use super::*;
 
     fn get_maze() -> Maze{
-        let filename = "perfect2k";
+        let filename = "tiny";
 
         let image: DynamicImage = image::open("images/".to_owned() + &filename + ".png").unwrap();
         let color: RgbImage = image.to_rgb8();
@@ -44,11 +44,12 @@ mod tests {
     }
 
     fn maze_has_start(maze: &Maze) -> bool {       
-        
         let mut start = false;
-        for node in &maze.maze[0] {
-            match node {
-                Some(node) => start = start || node.is_start(),
+        let y = 0;
+
+        for x in 0..maze.width {
+            match &maze.maze[x as usize][y] {
+                Some(node) => start = start || node._is_start(),
                 None => continue
             }
         }
@@ -57,9 +58,11 @@ mod tests {
 
     fn maze_has_end(maze: &Maze) -> bool {
         let mut end = false;
-        for node in &maze.maze[(maze.height-1) as usize] {
-            match node {
-                Some(node) => end = end || node.is_end(),
+        let y = (maze.height-1) as usize;
+
+        for x in 0..maze.width {
+            match &maze.maze[x as usize][y] {
+                Some(node) => end = end || node._is_end(),
                 None => continue
             }
         }
@@ -67,11 +70,12 @@ mod tests {
     }
 
     fn nodes_has_start(maze: &Maze) -> bool {       
-        
         let mut start = false;
-        for node in &maze.nodes[0] {
-            match node {
-                Some(node) => start = start || node.is_start(),
+        let y = 0;
+
+        for x in 0..maze.width {
+            match &maze.nodes[x as usize][y] {
+                Some(node) => start = start || node._is_start(),
                 None => continue
             }
         }
@@ -80,9 +84,11 @@ mod tests {
 
     fn nodes_has_end(maze: &Maze) -> bool {
         let mut end = false;
-        for node in &maze.nodes[(maze.height-1) as usize] {
-            match node {
-                Some(node) => end = end || node.is_end(),
+        let y = (maze.height-1) as usize;
+
+        for x in 0..maze.width {
+            match &maze.nodes[x as usize][y] {
+                Some(node) => end = end || node._is_end(),
                 None => continue
             }
         }
@@ -148,7 +154,7 @@ impl Maze {
             for x in 0..self.width {
                 if self.image[(x,y)] == image::Luma([255]) {
                     let node = Some(Node::new(x, y, y==0, y==self.height-1));
-                    self.maze[y as usize][x as usize] = node;
+                    self.maze[x as usize][y as usize] = node;
                 }
             }
         }        
@@ -164,11 +170,12 @@ impl Maze {
     }
 
     fn filter_start(&mut self) {
+        let y = 0;
         for x in 1..self.width-1 {
-            match self.maze[0 as usize][x as usize] {
+            match self.maze[x as usize][y as usize] {
                 Some(_) => {
                     println!("Found Node");
-                    self.nodes[0 as usize][x as usize] = Some(Node::new(x, 0, true, false))
+                    self.nodes[x as usize][y as usize] = Some(Node::new(x, y, true, false))
                 },
                 None => continue                    
             }                
@@ -178,8 +185,8 @@ impl Maze {
     fn filter_end(&mut self) {
         let y = (self.height - 1) as usize;
         for x in 1..self.width-1 {
-            match self.maze[y][x as usize] {
-                Some(_) => self.nodes[y][x as usize] = Some(Node::new(x, y as u32, false, true)),
+            match self.maze[x as usize][y] {
+                Some(_) => self.nodes[x as usize][y] = Some(Node::new(x, y as u32, false, true)),
                 None => continue
             }
         }

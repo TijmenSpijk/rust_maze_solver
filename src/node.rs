@@ -30,11 +30,11 @@ impl Node {
         (self.x, self.y)
     }
 
-    pub fn is_start(&self) -> bool {
+    pub fn _is_start(&self) -> bool {
         self.start
     }
 
-    pub fn is_end(&self) -> bool {
+    pub fn _is_end(&self) -> bool {
         self.end
     }
 }
