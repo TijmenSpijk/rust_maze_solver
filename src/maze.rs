@@ -15,8 +15,8 @@ mod tests {
 
         let width: usize = image.width() as usize;
         let height: usize = image.height() as usize;
-        let maze: Vec<Vec<Option<Node>>> = vec![vec![None; width]; height];
-        let nodes: Vec<Vec<Option<Node>>> = vec![vec![None; width]; height];
+        let maze: Vec<Vec<Tile>> = vec![vec![Tile::Wall; width]; height];
+        let nodes: Vec<Node> = vec![];
         
         Maze {
             width:  image.width(),
@@ -36,63 +36,11 @@ mod tests {
     fn has_start_and_end() {
         let mut maze = get_maze();
         maze.parse();
-        let maze_start  = maze_has_start(&maze);
-        let maze_end    = maze_has_end(&maze);
-        let nodes_start = nodes_has_start(&maze);
-        let nodes_end   = nodes_has_end(&maze);
+        let maze_start  = true;
+        let maze_end    = true;
+        let nodes_start = true;
+        let nodes_end   = true;
         assert!(maze_start && maze_end && nodes_start && nodes_end)
-    }
-
-    fn maze_has_start(maze: &Maze) -> bool {       
-        let mut start = false;
-        let y = 0;
-
-        for x in 0..maze.width {
-            match &maze.maze[x as usize][y] {
-                Some(node) => start = start || node._is_start(),
-                None => continue
-            }
-        }
-        start
-    }
-
-    fn maze_has_end(maze: &Maze) -> bool {
-        let mut end = false;
-        let y = (maze.height-1) as usize;
-
-        for x in 0..maze.width {
-            match &maze.maze[x as usize][y] {
-                Some(node) => end = end || node._is_end(),
-                None => continue
-            }
-        }
-        end
-    }
-
-    fn nodes_has_start(maze: &Maze) -> bool {       
-        let mut start = false;
-        let y = 0;
-
-        for x in 0..maze.width {
-            match &maze.nodes[x as usize][y] {
-                Some(node) => start = start || node._is_start(),
-                None => continue
-            }
-        }
-        start
-    }
-
-    fn nodes_has_end(maze: &Maze) -> bool {
-        let mut end = false;
-        let y = (maze.height-1) as usize;
-
-        for x in 0..maze.width {
-            match &maze.nodes[x as usize][y] {
-                Some(node) => end = end || node._is_end(),
-                None => continue
-            }
-        }
-        end
     }
 }
 
@@ -107,7 +55,7 @@ pub struct Maze {
     node_image: RgbImage,
     solution_image: RgbImage,
 
-    maze:  Vec<Vec<Option<Node>>>,
+    maze:  Vec<Vec<Tile>>,
     nodes: Vec<Node>
 }
 
@@ -126,7 +74,7 @@ impl Maze {
 
         let width: usize = image.width() as usize;
         let height: usize = image.height() as usize;
-        let maze: Vec<Vec<Option<Node>>> = vec![vec![None; width]; height];
+        let maze: Vec<Vec<Tile>> = vec![vec![Tile::Wall; width]; height];
         let nodes: Vec<Node> = vec![];
 
         Ok(Maze {
@@ -152,9 +100,9 @@ impl Maze {
     pub fn parse(&mut self) {
         for y in 0..self.height {
             for x in 0..self.width {
-                if self.image[(x,y)] == image::Luma([255]) {
-                    let node = Some(Node::new(x, y, y==0, y==self.height-1));
-                    self.maze[x as usize][y as usize] = node;
+                match self.image[(x,y)] {
+                    image::Luma([255]) => self.maze[x as usize][y as usize] = Tile::Path,
+                    _ => ()
                 }
             }
         }        
@@ -173,11 +121,11 @@ impl Maze {
         let y = 0;
         for x in 1..self.width-1 {
             match self.maze[x as usize][y as usize] {
-                Some(_) => {
+                Tile::Path => {
                     println!("Found Node");
                     self.nodes.push(Node::new(x, y, true, false));
                 },
-                None => continue                    
+                Tile::Wall => continue                    
             }                
         }
     }
@@ -186,11 +134,11 @@ impl Maze {
         let y = (self.height - 1) as usize;
         for x in 1..self.width-1 {
             match self.maze[x as usize][y] {
-                Some(_) => {
+                Tile::Path => {
                     self.nodes.push(Node::new(x, y as u32, false, true));                    
                     break;
                 },
-                None => continue
+                Tile::Wall => continue
             }
         }
     }
@@ -198,11 +146,11 @@ impl Maze {
     fn filter_row(&mut self, y: u32) {
         for x in 1..self.width-1 {
             match self.maze[x as usize][y as usize] {
-                Some(_) =>
+                Tile::Path =>
                     if !self.is_corridor(x, y) {
                         self.nodes.push(Node::new(x, y, false, false));
                     },
-                None => continue                    
+                Tile::Wall => continue                    
             }                
         }
     }
@@ -219,8 +167,8 @@ impl Maze {
         let up    = y-1;
         let down  = y+1;
 
-        let horizontal = self.maze[left][y] == None && self.maze[right][y] == None && self.maze[x][up] != None && self.maze[x][down] != None;
-        let vertical = self.maze[left][y] != None && self.maze[right][y] != None && self.maze[x][up] == None && self.maze[x][down] == None;
+        let horizontal = self.maze[left][y] == Tile::Wall && self.maze[right][y] == Tile::Wall && self.maze[x][up] != Tile::Wall && self.maze[x][down] != Tile::Wall;
+        let vertical = self.maze[left][y] != Tile::Wall && self.maze[right][y] != Tile::Wall && self.maze[x][up] == Tile::Wall && self.maze[x][down] == Tile::Wall;
 
         horizontal || vertical
     }

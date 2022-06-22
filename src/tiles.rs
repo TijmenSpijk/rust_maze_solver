@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+#[derive(Clone, PartialEq, Debug)]
 pub enum Dir {
     Up,
     Down,
@@ -7,6 +8,7 @@ pub enum Dir {
     Right
 }
 
+#[derive(Clone, PartialEq, Debug)]
 pub enum Tile {
     Wall,
     Path
