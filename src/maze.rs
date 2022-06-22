@@ -181,7 +181,15 @@ impl Maze {
         for y in 0..self.height {
             for x in 0..self.width {
                 match &self.maze[x as usize][y as usize] {
-                    Tile::Node(_) => self.node_image[(x,y)] = image::Rgb([255,0,0]),
+                    Tile::Node(node) => {
+                        if node._is_start() {
+                            self.node_image[(x,y)] = image::Rgb([0,0,255])
+                        } else if node._is_end() {
+                            self.node_image[(x,y)] = image::Rgb([0,255,0])
+                        } else {
+                            self.node_image[(x,y)] = image::Rgb([255,0,0])
+                        }
+                    },
                     _ => ()
                 }
             }
