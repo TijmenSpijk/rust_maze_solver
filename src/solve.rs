@@ -8,10 +8,6 @@ pub struct Solution {
     pub checked: HashSet<Node>,
 }
 
-fn solve() {
-    
-}
-
 pub fn depth_first_search(nodes: Vec<Node>) -> Solution {
     let mut stack: Vec<Node> = vec![];
     let mut checked: HashSet<Node> = HashSet::new();
@@ -27,7 +23,7 @@ pub fn depth_first_search(nodes: Vec<Node>) -> Solution {
                             Some(i) => {
                                 let neighbor = nodes[i as usize];
                                 if neighbor._is_end() {
-                                    return Solution { path: vec![], checked: checked };
+                                    break;
                                 }
                                 stack.push(neighbor);
                             },
@@ -42,6 +38,14 @@ pub fn depth_first_search(nodes: Vec<Node>) -> Solution {
     Solution { path: vec![], checked: checked }
 }
 
-fn breadth_first_search(maze: &Maze) {
+fn breadth_first_search(nodes: Vec<Node>) {
+
+}
+
+fn dijkstra(nodes: Vec<Node>) {
+
+}
+
+fn astar(nodes: Vec<Node>) {
 
 }
