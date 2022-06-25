@@ -1,6 +1,7 @@
 use std::env;
 use image::{RgbImage, GrayImage, DynamicImage};
 use crate::tiles::*;
+use crate::solve::*;
 
 #[cfg(test)]
 mod tests {
@@ -26,7 +27,8 @@ mod tests {
             node_image: color.clone(),
             solution_image: color.clone(),
             
-            maze:  maze,
+            maze: maze,
+            nodes: vec![],
             node_count: 0,
         }
     }
@@ -55,6 +57,7 @@ pub struct Maze {
     solution_image: RgbImage,
 
     maze:  Vec<Vec<Tile>>,
+    nodes: Vec<Node>,
     node_count: u32,
 }
 
@@ -85,6 +88,7 @@ impl Maze {
             solution_image: color.clone(),
             
             maze:  vec![vec![Tile::Wall; width]; height],
+            nodes: vec![],
             node_count: 0,
         })
     }
@@ -92,6 +96,10 @@ impl Maze {
     fn get_file_name(path: String) -> String {
         let filename = path.split('/').last().unwrap().split('.').next().unwrap();
         filename.clone().to_owned()
+    }
+
+    pub fn get_nodes(&self) -> &Vec<Node> {
+        &self.nodes
     }
 }
 
@@ -101,7 +109,9 @@ impl Maze {
         let y = 0;
         for x in 1..self.width-1 {
             if self.image[(x,y)] ==image::Luma([255]) {
-                self.maze[x as usize][y as usize] = Tile::Node(Node::new(self.node_count, (x, y), true, false));
+                let new_node = Node::new(self.node_count, (x, y), true, false);
+                self.maze[x as usize][y as usize] = Tile::Node(new_node);
+                self.nodes.push(new_node);
                 self.node_count += 1;
             } 
         }
@@ -110,11 +120,19 @@ impl Maze {
             for x in 1..self.width-1 {
                 if self.image[(x,y)] == image::Luma([255]) {
                     if !self.is_corridor(x, y) {          
-                        let mut new_node = Node::new(self.node_count, (x, y), false, false);
-                        self.node_count += 1;                        
-                        self.check_left(&mut new_node, (x,y));
-                        self.check_up(&mut new_node, (x,y));
-                        self.maze[x as usize][y as usize] = Tile::Node(new_node);
+                        let new_node = Node::new(self.node_count, (x, y), false, false);
+                        self.maze[x as usize][y as usize] = Tile::Node(new_node);    
+                        self.nodes.push(new_node);
+                
+                        for i in (0..x).rev() {
+                            self.connect_nodes_left_right(self.node_count, (i,y))
+                        }
+                        
+                        for i in (0..y).rev() {
+                            self.connect_nodes_up_down(self.node_count, (x,i))
+                        }
+
+                        self.node_count += 1; 
                     } else {
                         self.maze[x as usize][y as usize] = Tile::Path;
                     }
@@ -125,38 +143,42 @@ impl Maze {
         let y = self.height-1;
         for x in 1..self.width-1 {
             if self.image[(x,y)] ==image::Luma([255]) {
-                let mut new_node = Node::new(self.node_count, (x, y), false, true);
-                self.node_count += 1;                
-                self.check_left(&mut new_node, (x,y));
-                self.check_up(&mut new_node, (x,y));
+                let new_node = Node::new(self.node_count, (x, y), false, true);
                 self.maze[x as usize][y as usize] = Tile::Node(new_node);
+                self.nodes.push(new_node);
+                
+                for i in (0..x).rev() {
+                    self.connect_nodes_left_right(self.node_count, (i,y))
+                }
+                
+                for i in (0..y).rev() {
+                    self.connect_nodes_up_down(self.node_count, (x,i))
+                }
+
+                self.node_count += 1;                
             } 
         }
     }
 
-    fn check_left(&mut self, new_node: &mut Node, (x,y): (u32, u32)) {
-        for i in (0..x).rev() {
-            match &self.maze[i as usize][y as usize] {
-                Tile::Wall => return,
-                Tile::Path => continue,
-                Tile::Node(mut node) => {
-                    new_node.connect(Dir::Left, node.get_id());
-                    node.connect(Dir::Right, new_node.get_id());
-                }
-            }
+    fn connect_nodes_left_right(&mut self, new_id: u32, (x,y): (u32, u32)) {
+        match &self.maze[x as usize][y as usize] {
+            Tile::Node(node) => {
+                let old_id = node.get_id();
+                self.nodes[old_id as usize].connect(Dir::Right, new_id);
+                self.nodes[new_id as usize].connect(Dir::Left, old_id);
+            },
+            _ => ()
         }
     }
 
-    fn check_up(&mut self, new_node: &mut Node, (x,y): (u32, u32)) {
-        for i in (0..y).rev() {
-            match &self.maze[x as usize][i as usize] {
-                Tile::Wall => return,
-                Tile::Path => continue,
-                Tile::Node(mut node) => {
-                    new_node.connect(Dir::Up, node.get_id());
-                    node.connect(Dir::Down, new_node.get_id());
-                }
-            }
+    fn connect_nodes_up_down(&mut self, new_id: u32, (x,y): (u32, u32)) {
+        match &self.maze[x as usize][y as usize] {
+            Tile::Node(node) => {
+                let old_id = node.get_id();
+                self.nodes[old_id as usize].connect(Dir::Down, new_id);
+                self.nodes[new_id as usize].connect(Dir::Up, old_id);
+            },
+            _ => ()
         }
     }
 
@@ -196,6 +218,18 @@ impl Maze {
         }
 
         match self.node_image.save("images/processed/".to_owned() + &self.filename + "_nodes.png") {
+            Ok(_) => (),
+            Err(err) => eprintln!("{}", err)
+        }
+    }
+
+    pub fn save_solution(&mut self, solution: Solution) {
+        for node in solution.checked {
+            let (x,y) = node.get_coords();
+            self.solution_image[(x,y)] = image::Rgb([0,0,255])
+        }
+
+        match self.solution_image.save("images/processed/".to_owned() + &self.filename + "_solution.png") {
             Ok(_) => (),
             Err(err) => eprintln!("{}", err)
         }

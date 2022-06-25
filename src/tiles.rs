@@ -13,8 +13,7 @@ pub enum Dir {
     Right
 }
 
-
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Node {
     id: u32,
     x: u32,

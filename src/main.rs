@@ -1,9 +1,11 @@
 use std::{env, process};
 
+use crate::solve::*;
 use crate::maze::*;
 
 mod tiles;
 mod maze;
+mod solve;
 
 fn main() {
     println!("Reading Input");
@@ -13,6 +15,9 @@ fn main() {
     maze.parse();
     println!("Saving Nodes to Image");
     maze.save_nodes();
+    println!("Finding Solution");
+    let solution = depth_first_search(maze.get_nodes().to_vec());
+    maze.save_solution(solution);
 }
 
 fn setup_maze() -> Maze {
