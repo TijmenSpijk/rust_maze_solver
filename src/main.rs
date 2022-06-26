@@ -16,8 +16,10 @@ fn main() {
     println!("Saving Nodes to Image");
     maze.save_nodes();
     println!("Finding Solution");
-    let solution = depth_first_search(maze.get_nodes().to_vec());
-    maze.save_solution(solution);
+    let dfs_solution = depth_first_search(maze.get_nodes().to_vec());
+    maze.save_solution(dfs_solution);
+    let bfs_solution = breadth_first_search(maze.get_nodes().to_vec());
+    maze.save_solution(bfs_solution);
 }
 
 fn setup_maze() -> Maze {
