@@ -123,15 +123,8 @@ impl Maze {
                         let new_node = Node::new(self.node_count, (x, y), false, false);
                         self.maze[x as usize][y as usize] = Tile::Node(new_node);    
                         self.nodes.push(new_node);
-                
-                        for i in (0..x).rev() {
-                            self.connect_nodes_left_right(self.node_count, (i,y))
-                        }
-                        
-                        for i in (0..y).rev() {
-                            self.connect_nodes_up_down(self.node_count, (x,i))
-                        }
-
+                        self.connect_nodes_left_right(self.node_count, (x,y));                
+                        self.connect_nodes_up_down(self.node_count, (x,y));
                         self.node_count += 1; 
                     } else {
                         self.maze[x as usize][y as usize] = Tile::Path;
@@ -146,39 +139,42 @@ impl Maze {
                 let new_node = Node::new(self.node_count, (x, y), false, true);
                 self.maze[x as usize][y as usize] = Tile::Node(new_node);
                 self.nodes.push(new_node);
-                
-                for i in (0..x).rev() {
-                    self.connect_nodes_left_right(self.node_count, (i,y))
-                }
-                
-                for i in (0..y).rev() {
-                    self.connect_nodes_up_down(self.node_count, (x,i))
-                }
-
+                self.connect_nodes_left_right(self.node_count, (x,y));                
+                self.connect_nodes_up_down(self.node_count, (x,y));
                 self.node_count += 1;                
             } 
         }
     }
 
     fn connect_nodes_left_right(&mut self, new_id: u32, (x,y): (u32, u32)) {
-        match &self.maze[x as usize][y as usize] {
-            Tile::Node(node) => {
-                let old_id = node.get_id();
-                self.nodes[old_id as usize].connect(Dir::Right, new_id);
-                self.nodes[new_id as usize].connect(Dir::Left, old_id);
-            },
-            _ => ()
+        for i in (0..x).rev() {
+            println!("{:?}", &self.maze[i as usize][y as usize]);
+            match &self.maze[i as usize][y as usize] {
+                Tile::Wall => break,
+                Tile::Path => continue,
+                Tile::Node(node) => {
+                    let old_id = node.get_id();
+                    self.nodes[old_id as usize].connect(Dir::Right, new_id);
+                    self.nodes[new_id as usize].connect(Dir::Left, old_id);
+                    break;
+                }
+            }
         }
     }
 
     fn connect_nodes_up_down(&mut self, new_id: u32, (x,y): (u32, u32)) {
-        match &self.maze[x as usize][y as usize] {
-            Tile::Node(node) => {
-                let old_id = node.get_id();
-                self.nodes[old_id as usize].connect(Dir::Down, new_id);
-                self.nodes[new_id as usize].connect(Dir::Up, old_id);
-            },
-            _ => ()
+        for i in (0..y).rev() {
+            println!("{:?}", &self.maze[x as usize][i as usize]);
+            match &self.maze[x as usize][i as usize] {
+                Tile::Wall => break,
+                Tile::Path => continue,
+                Tile::Node(node) => {
+                    let old_id = node.get_id();
+                    self.nodes[old_id as usize].connect(Dir::Down, new_id);
+                    self.nodes[new_id as usize].connect(Dir::Up, old_id);
+                    break;
+                }
+            }
         }
     }
 
