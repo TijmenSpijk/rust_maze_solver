@@ -148,7 +148,6 @@ impl Maze {
 
     fn connect_nodes_left_right(&mut self, new_id: u32, (x,y): (u32, u32)) {
         for i in (0..x).rev() {
-            println!("{:?}", &self.maze[i as usize][y as usize]);
             match &self.maze[i as usize][y as usize] {
                 Tile::Wall => break,
                 Tile::Path => continue,
@@ -164,7 +163,6 @@ impl Maze {
 
     fn connect_nodes_up_down(&mut self, new_id: u32, (x,y): (u32, u32)) {
         for i in (0..y).rev() {
-            println!("{:?}", &self.maze[x as usize][i as usize]);
             match &self.maze[x as usize][i as usize] {
                 Tile::Wall => break,
                 Tile::Path => continue,
@@ -225,7 +223,12 @@ impl Maze {
             self.solution_image[(x,y)] = image::Rgb([0,0,255])
         }
 
-        match self.solution_image.save("images/processed/".to_owned() + &self.filename + "_solution.png") {
+        for node in solution.path {
+            let (x,y) = self.nodes[node as usize].get_coords();
+            self.solution_image[(x,y)] = image::Rgb([0,255,0])
+        }
+
+        match self.solution_image.save("images/processed/".to_owned() + &self.filename + "_" + &solution.algorithm + "_solution.png") {
             Ok(_) => (),
             Err(err) => eprintln!("{}", err)
         }

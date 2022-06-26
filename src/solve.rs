@@ -1,31 +1,36 @@
 use std::collections::HashSet;
-
-use crate::maze::*;
 use crate::tiles::*;
 
 pub struct Solution {
+    pub algorithm: String,
     pub path: Vec<u32>,
     pub checked: HashSet<Node>,
 }
 
 pub fn depth_first_search(nodes: Vec<Node>) -> Solution {
-    let mut stack: Vec<Node> = vec![];
+    let mut stack: Vec<(Node, Vec<u32>)> = vec![];
     let mut checked: HashSet<Node> = HashSet::new();
-    stack.push(nodes[0]);
+    stack.push((nodes[0], vec![]));
     
     loop {
         match stack.pop() {
-            Some(node) => {
+            Some((node, path)) => {
                 if checked.insert(node) {
+                    let mut new_path = path.clone();
+                    new_path.push(node.get_id());
+                    if node._is_end() {                        
+                        return Solution {
+                            algorithm: String::from("depth_first_search"),
+                            path: new_path,
+                            checked: checked
+                        };
+                    }
                     let neighbors = node.get_neighbors();
                     for neighbor_id in neighbors {
                         match neighbor_id {
                             Some(i) => {
                                 let neighbor = nodes[i as usize];
-                                if neighbor._is_end() {
-                                    break;
-                                }
-                                stack.push(neighbor);
+                                stack.push((neighbor, new_path.clone()));
                             },
                             None => ()
                         }
@@ -35,7 +40,7 @@ pub fn depth_first_search(nodes: Vec<Node>) -> Solution {
             None => break
         }
     }
-    Solution { path: vec![], checked: checked }
+    panic!("No solution found")
 }
 
 fn breadth_first_search(nodes: Vec<Node>) {

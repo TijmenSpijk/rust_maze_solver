@@ -16,11 +16,8 @@ fn main() {
     println!("Saving Nodes to Image");
     maze.save_nodes();
     println!("Finding Solution");
-    for node in maze.get_nodes() {
-        println!("{}, {:?}", node.get_id(), node.get_neighbors())
-    }
-    // let solution = depth_first_search(maze.get_nodes().to_vec());
-    // maze.save_solution(solution);
+    let solution = depth_first_search(maze.get_nodes().to_vec());
+    maze.save_solution(solution);
 }
 
 fn setup_maze() -> Maze {
